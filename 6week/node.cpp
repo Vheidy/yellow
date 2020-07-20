@@ -1,50 +1,56 @@
 #include "node.h"
 
-bool EmptyNode::Evaluate(const Date& date, const string& event) const { return true; }
+template<class T>
+bool compare(Comparison cmp, const T& a, const T& b)
+{
+    switch (cmp)
+    {
+        case Comparison::Less:
+            return a < b;
 
-DateComparisonNode::DateComparisonNode (const Comparison& comp, const Date& data)
-: cmp(comp), date(data) {}
-bool	DateComparisonNode::Evaluate(const Date& date, const string& event) const {
-	if (cmp == Comparison::Less) {
-		return date < this->date;
-	} else if (cmp == Comparison::LessOrEqual) {
-		return date <= this->date;
-	} else if (cmp == Comparison::Equal) {
-		return date == this->date;
-	} else if (cmp == Comparison::NotEqual) {
-		return date != this->date;
-	} else if (cmp == Comparison::Greater) {
-		return date > this->date;
-	} else if (cmp == Comparison::GreaterOrEqual) {
-		return date >= this->date;
-	}
-	}
+        case Comparison::LessOrEqual:
+            return a <= b;
 
+        case Comparison::Greater:
+            return a > b;
 
-EventComparisonNode::EventComparisonNode(const Comparison& comp, const string& value) : cmp(comp), event(value) {}
-bool	EventComparisonNode::Evaluate(const Date& date, const string& event) const {
-	if (cmp == Comparison::Less) {
-		return event < this->event;
-	} else if (cmp == Comparison::LessOrEqual) {
-		return event <= this->event;
-	} else if (cmp == Comparison::Equal) {
-		return event == this->event;
-	} else if (cmp == Comparison::NotEqual) {
-		return event != this->event;
-	} else if (cmp == Comparison::Greater) {
-		return event > this->event;
-	} else if (cmp == Comparison::GreaterOrEqual) {
-		return event >= this->event;
-	}
+        case Comparison::GreaterOrEqual:
+            return a >= b;
+
+        case Comparison::Equal:
+            return a == b;
+
+        case Comparison::NotEqual:
+            return a != b;
+    }
+
+    throw invalid_argument("Invalid comparison operator");
 }
 
+bool DateComparisonNode::Evaluate(const Date& date, const string& event) const
+{
+    (void) event;
+    return compare(cmp_, date, date_);
+}
 
-LogicalOperationNode::LogicalOperationNode (const LogicalOperation& log_op, const shared_ptr<Node>& left, 
-const shared_ptr<Node>& right) : _left(left), _right(right), _op(log_op) {}
-bool LogicalOperationNode::Evaluate(const Date& date, const string& event) const {
-	if (_op == LogicalOperation::And) {
-		return (_left->Evaluate(date, event) && _right->Evaluate(date, event));
-	} else {
-		return (_left->Evaluate(date, event) || _right->Evaluate(date, event));
-	}
+bool EventComparisonNode::Evaluate(const Date& date, const string& event) const
+{
+    (void) date;
+    return compare(cmp_, event, event_);
+}
+
+bool LogicalOperationNode::Evaluate(const Date& date, const string& event) const
+{
+    (void) date; (void) event;
+    
+    switch(op_)
+    {
+        case LogicalOperation::Or:
+            return left_->Evaluate(date, event) || right_->Evaluate(date, event);
+
+        case LogicalOperation::And:
+            return left_->Evaluate(date, event) && right_->Evaluate(date, event);
+    }
+
+    throw invalid_argument("Invalid logical operation");
 }

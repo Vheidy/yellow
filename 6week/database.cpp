@@ -1,57 +1,67 @@
 #include "database.h"
-#include <algorithm>
-#include <iostream>
 
-using namespace std;
 
-void	Database::Add(const Date& data, const string& event){
-	base[data].insert(event);
-	if (count(begin(order[data]), end(order[data]), event) == 0)
-		order[data].push_back(event);
-}
-void	Database::Print(ostream& os) const{
-	for (const auto& i : order) {
-		for (const auto& j : i.second) {
-			os << i.first << " " << j << endl;
-		}
-	}
-}
-template<typename Predicate> int Database::RemoveIf(Predicate predicate){}
-template<typename Predicate> vector<pair<Date, string>>	Database::FindIf(Predicate predicate){}
-pair<Date, string>	Database::Last(Date data){
-	auto it = order.upper_bound(data);
-	if (it == begin(order))
-		throw invalid_argument("No entries");
-	else {
-		it--;
-		string res;
-		return make_pair(it->first, it->second.back());
-	}
-}
-
-ostream& operator<<(ostream& os, const pair<Date, vector<string>>& pair_)
+bool operator<(const Entry& a, const Entry& b)
 {
-	for (const auto& item : pair_.second)
-	{
-		os << pair_.first << " " << item << endl;
-	}
-
-	return os;
+    return a.date() < b.date();
 }
 
-
-bool operator<(const pair<Date, string>& left, const pair<Date, string>& right)
+bool operator==(const Entry& a, const Entry& b)
 {
-	return left.first < right.first;
+    return a.date() == b.date() && a.event() == b.event();
 }
 
-
-bool operator==(const pair<Date, string>& left, const pair<Date, string>& right)
+ostream& operator<<(ostream& os, const Entry& entry)
 {
-	return left.first == right.first && right.second == left.second;
+    os << entry.date() << " " << entry.event();
+    return os;
 }
 
-ostream& operator<<(ostream& stream, pair<Date, string> item) {
-	stream << item.first << " " << item.second << endl;
-	return stream;
+void Database::EventList::Print(ostream& os, const Date& date) const
+{
+    for (const auto& event : events_)
+        os << date << " " << event << endl;
 }
+
+void Database::Add(const Date& date, const string& event)
+{  
+    auto it = db_.find(date);
+
+    if (it != db_.end())
+    {
+        auto& events = it->second;
+
+        if (events.Contains(event))
+            return;
+        
+        events.Add(event);
+    }
+    else
+    {
+        db_[date].Add(event);
+    }
+}
+
+void Database::Print(ostream& os) const
+{
+    for (const auto& [date, events] : db_)
+    {
+        events.Print(os, date);
+    }
+}
+
+Entry Database::Last(const Date& date) const
+{
+    if (db_.empty())
+        throw invalid_argument("Empty database");
+
+    auto it = db_.lower_bound(date);
+
+    if (it == db_.cbegin() && date < it->first)
+        throw invalid_argument("No entries for requested date");
+
+    if (it == db_.cend() || it->first != date)
+        it = prev(it);
+
+    return Entry(it->first, it->second.Last());
+} 

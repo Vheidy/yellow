@@ -1,9 +1,7 @@
 #include "condition_parser.h"
 #include "token.h"
-#include "date.h"
-#include <iostream>
-#include <map>
 
+#include <map>
 using namespace std;
 
 template <class It> shared_ptr<Node> ParseComparison(It& current, It end) {
@@ -67,15 +65,15 @@ shared_ptr<Node> ParseExpression(It& current, It end, unsigned precedence) {
 
   shared_ptr<Node> left;
 
-  if (current->type == TokenType::PAREN_LEFT) { // проверка на скобку
+  if (current->type == TokenType::PAREN_LEFT) {
     ++current; // consume '('
-    left = ParseExpression(current, end, 0u); // если есть '(' пропусти и запусти сначала
+    left = ParseExpression(current, end, 0u);
     if (current == end || current->type != TokenType::PAREN_RIGHT) {
       throw logic_error("Missing right paren");
     }
     ++current; // consume ')'
   } else {
-    left = ParseComparison(current, end); 
+    left = ParseComparison(current, end);
   }
 
   const map<LogicalOperation, unsigned> precedences = {
@@ -105,7 +103,7 @@ shared_ptr<Node> ParseExpression(It& current, It end, unsigned precedence) {
 }
 
 shared_ptr<Node> ParseCondition(istream& is) {
-  auto tokens = Tokenize(is); // vector<Token> : value - type
+  auto tokens = Tokenize(is);
   auto current = tokens.begin();
   auto top_node = ParseExpression(current, tokens.end(), 0u);
 

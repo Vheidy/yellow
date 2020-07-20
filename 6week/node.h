@@ -1,57 +1,78 @@
 #pragma once
 
-#include "date.h"
-#include <string>
 #include <memory>
 
-enum class Comparison {
-	Less,
-	LessOrEqual,
-	Greater,
-	GreaterOrEqual,
-	Equal,
-	NotEqual,
+#include "date.h"
+
+enum class Comparison
+{
+    Less, LessOrEqual, 
+    Greater, GreaterOrEqual,
+    Equal, NotEqual
 };
 
-enum class LogicalOperation {
-	Or,
-	And,
+enum class LogicalOperation
+{
+    Or, And
 };
 
-
-class Node {
+class Node
+{
 public:
-	virtual bool	Evaluate(const Date& date, const string& event) const = 0;
+    virtual bool Evaluate(const Date& date, const string& event) const = 0;
 };
 
-class EmptyNode : public Node{
-	bool	Evaluate(const Date& date, const string& event) const override;
-};
-
-class DateComparisonNode : public Node {
+class EmptyNode : public Node
+{
 public:
-	DateComparisonNode (const Comparison& comp, const Date& data); // используется только date
-	bool Evaluate(const Date& date, const string& event) const override;
+    EmptyNode() {}
+    
+    bool Evaluate(const Date& date, const string& event) const override 
+    { 
+        (void) date; (void) event;
+        return true;
+    }
+};
+
+class DateComparisonNode : public Node
+{
+public:
+    DateComparisonNode(Comparison cmp, const Date& date)
+        : cmp_(cmp), date_(date)
+    {}
+
+    bool Evaluate(const Date& date, const string& event) const override;
+
 private:
-	const Date date;
-	const Comparison& cmp;
-	
+    const Comparison cmp_;
+    const Date date_;
 };
 
-class EventComparisonNode : public Node {
+class EventComparisonNode : public Node
+{
 public:
-	EventComparisonNode(const Comparison& comp, const string& value); // используется event
-	bool Evaluate(const Date& date, const string& event) const override;
+    EventComparisonNode(Comparison cmp, const string& event)
+        : cmp_(cmp), event_(event)
+    {}
+
+    bool Evaluate(const Date& date, const string& event) const override;
+
 private:
-	const Comparison& cmp;
-	const string event;
+    const Comparison cmp_;
+    const string event_;
 };
 
-class LogicalOperationNode : public Node {
+class LogicalOperationNode : public Node
+{
 public:
-	LogicalOperationNode (const LogicalOperation& log_op, const shared_ptr<Node>& left, const shared_ptr<Node>& right);
-	bool Evaluate(const Date& date, const string& event) const override;
+    LogicalOperationNode(LogicalOperation op, shared_ptr<Node> left, shared_ptr<Node> right)
+        : op_(op), left_(left), right_(right) 
+    {}
+
+    bool Evaluate(const Date& date, const string& event) const override;
+
 private:
-	shared_ptr<const Node> _left, _right;
-	LogicalOperation _op;
+    const LogicalOperation op_;
+    const shared_ptr<Node> left_;
+    const shared_ptr<Node> right_;
 };

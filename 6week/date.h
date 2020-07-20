@@ -1,28 +1,29 @@
 #pragma once
+
 #include <iostream>
-#include <sstream>
-#include <iomanip>
-#include <vector>
 
 using namespace std;
 
-class Date {
+class Date
+{
 public:
-	Date(int new_day, int new_month, int new_year);
-	int GetYear() const;
-	int GetMonth() const;
-	int GetDay() const;
-private:
-	int day, month, year;
+    Date() : Year(1), Month(1), Day(1) 
+    {}
+
+    Date(int year, int month, int day) : Year(year), Month(month), Day(day)
+    {}
+
+    const int Year, Month, Day;
+
+    string tostring() const;
 };
 
-Date	ParseDate(istream& is);
+Date ParseDate(istream& is);
 
-ostream& operator<<(ostream& stream, const Date& date);
-
-bool operator<(const Date& lhs, const Date& rhs);
-bool operator<=(const Date& lhs, const Date& rhs);
-bool operator==(const Date& lhs, const Date& rhs);
-bool operator>=(const Date& lhs, const Date& rhs);
-bool operator>(const Date& lhs, const Date& rhs);
-bool operator!=(const Date& lhs, const Date& rhs);
+ostream& operator<<(ostream& os, const Date& date);
+bool operator<(const Date& d1, const Date& d2);
+bool operator==(const Date& d1, const Date& d2);
+bool operator!=(const Date& d1, const Date& d2);
+bool operator<=(const Date& d1, const Date& d2);
+bool operator>(const Date& d1, const Date& d2);
+bool operator>=(const Date& d1, const Date& d2);

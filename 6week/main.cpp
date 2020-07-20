@@ -1,25 +1,26 @@
-#include <iostream>
-#include <istream>
-#include <sstream> 
-#include <string>
-#include <iomanip>
-#include <stdexcept>
-#include "date.h"
 #include "database.h"
-#include "node.h"
+#include "date.h"
 #include "condition_parser.h"
+#include "node.h"
 #include "test_runner.h"
+
+#include <iostream>
+#include <stdexcept>
 
 using namespace std;
 
-string ParseEvent(istream& is) {
-  string str;
-  getline(is, str);
-  if (str[str.size() - 1] == ' ')
-      str.erase(str.size() - 1, 1);
-  if (str[0] == ' ')
-      str.erase(0, 1);
-  return str;
+string ParseEvent(istream& is) 
+{
+  string event;
+  getline(is, event);
+
+  auto first = event.find_first_not_of(" ");
+
+  if (first == string::npos)
+    return string();
+  
+  event.erase(0, first);
+  return event;
 }
 
 void TestAll();
@@ -35,13 +36,13 @@ int main() {
     string command;
     is >> command;
     if (command == "Add") {
-      const auto date = ParseDate(is); // class Date
-      const auto event = ParseEvent(is); // string
+      const auto date = ParseDate(is);
+      const auto event = ParseEvent(is);
       db.Add(date, event);
     } else if (command == "Print") {
       db.Print(cout);
     } else if (command == "Del") {
-      auto condition = ParseCondition(is); // shared_ptr<Node>/<DateComparisonNode>/<EventComparisonNode>
+      auto condition = ParseCondition(is);
       auto predicate = [condition](const Date& date, const string& event) {
         return condition->Evaluate(date, event);
       };

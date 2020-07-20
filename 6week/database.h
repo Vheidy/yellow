@@ -1,69 +1,130 @@
 #pragma once
-#include "date.h"
-#include <iostream>
-#include <map>
-#include <set>
-#include <string>
+
 #include <vector>
 #include <algorithm>
+#include <utility>
+#include <map>
+#include <set>
 
-using namespace std;
+#include "date.h"
 
-class Database {
+class Entry
+{
+    const Date date_;
+    const string event_;
+
 public:
-	void	Add(const Date& data, const string& event); // добавить событие в бау данных по дате
-	void	Print(ostream& os) const; // вывести все текущие события
-	template<typename Predicate> int RemoveIf(const Predicate& predicate) {
-		int res = 0;
-		map<Date, set<string>> new_base;
-		map<Date, vector<string>> new_order;
-		for (const auto& i : order) {
-			const auto it = stable_partition(i.second.begin(), i.second.end(),
-			[predicate, i](const auto& item){
-				return predicate(i.first, item);
-			});
-			const int tmp = i.second.size();
-			if (it == i.second.end()) {
-				res += tmp;
-			} else {
-				new_order[i.first] = vector<string>(it, i.second.end());
-				new_base[i.first] = set<string> (it, i.second.end());
-				res += tmp - new_order.at(i.first).size();
-			}
-		}
-		base = new_base;
-		order = new_order;
-		return res;
-	}
-	template<typename Predicate> vector<pair<Date, string>> FindIf(const Predicate& predicate) const {
-		map<Date, vector<string>> tmp;
-		vector<pair<Date, string>> res;
-		for (const auto& i : order) {
-			vector<string> v;
-			copy_if(i.second.begin(), i.second.end(), back_inserter(v),
-			[predicate, i](const auto& item) {
-				return predicate(i.first, item);
-			});
-			if (v.size() != 0)
-				tmp[i.first] = v;
-		}
-		for (const auto& i : tmp) {
-			for (const string& item : i.second) {
-				res.push_back(make_pair(i.first, item));
-			}
-		}
-		return res;
-	}
-	pair<Date, string>	Last(Date data);
-private:
-	map<Date, vector<string>> order;
-	map<Date, set<string>> base;
+    Entry() {}
+    Entry(const Date& date, const string& event = "")
+        : date_(date), event_(event)
+    {}
+
+    Date date()         const { return date_; }
+    string event()      const { return event_; }
+    string tostring()   const { return date_.tostring() + " " + event_; }
 };
 
-ostream& operator<<(ostream& os, const pair<Date, vector<string>>& pair_);
+bool operator<(const Entry& a, const Entry& b);
+bool operator==(const Entry& a, const Entry& b);
+ostream& operator<<(ostream& os, const Entry& entry);
 
-bool operator<(const pair<Date, string>& left, const pair<Date, string>& right);
+class Database
+{
+public:
+    using EntryList = vector<Entry>;
 
-bool operator==(const pair<Date, string>& left, const pair<Date, string>& right);
+    void Add(const Date& date, const string& event);
+    void Print(ostream& os) const;
 
-ostream& operator<<(ostream& stream, pair<Date, string> item);
+    template<class Predicate>
+    int RemoveIf(Predicate p) 
+    { 
+        int count = 0;
+
+        vector<Date> clean;
+
+        for (auto& [date, events] : db_)
+        {
+            count += events.RemoveIf(date, p);
+
+            if (events.IsEmpty())
+                clean.push_back(date);
+        }
+
+        for (const auto& date : clean)
+            db_.erase(date);        
+
+        return count;
+    }
+
+    template<class Predicate>
+    EntryList FindIf(Predicate p) const
+    { 
+        EntryList result;
+
+        for (const auto& item : db_)
+        {
+            auto events = item.second.Events();
+
+            for (const auto& event : events)
+            {
+                if (p(item.first, event))
+                    result.emplace_back(item.first, event);
+            }
+        }
+
+        return result;
+    }
+
+    Entry Last(const Date& date) const;
+
+private:
+
+    class EventList
+    {
+        vector<string> events_;
+        set<string> cache_;
+
+        public:
+
+        void Add(const string& event)
+        {
+            events_.push_back(event);
+            cache_.insert(event);          
+        }
+
+        bool Contains(const string& event)  const { return cache_.count(event) != 0; }
+        const vector<string>& Events()      const { return events_; }
+        string Last()                       const { return events_.back(); }
+        bool IsEmpty()                      const { return events_.empty(); }
+
+        void Print(ostream& os, const Date& date) const;
+
+        template <typename Predicate>
+        int RemoveIf(const Date& date, Predicate p)
+        {
+            auto it = stable_partition(events_.begin(), events_.end(), [&](const string& elem)
+            {
+                return !p(date, elem);
+            });
+
+            if (it == events_.end())
+                return 0;
+
+            int count = 0;
+
+            for (auto it_next = it; it_next != events_.end(); it_next++)
+            {
+                cache_.erase(*it_next);
+                count++;
+            }
+
+            events_.erase(it, events_.end());
+
+            return count;
+        }
+
+    };
+
+    map<Date, EventList> db_;
+};
