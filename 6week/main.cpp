@@ -8,7 +8,7 @@
 #include "database.h"
 #include "node.h"
 #include "condition_parser.h"
-#include "framework.h"
+#include "test_runner.h"
 
 using namespace std;
 
